@@ -348,8 +348,7 @@ class StackNode(Template):
         """
 
         self.stack = self.boto_conn.describe_stacks(self.stack_name)[0]
-        self.logger.debug('%s %s', self.stack_name,
-                                self.stack.stack_status)
+        self.logger.debug('%s %s', self.stack_name, self.stack.stack_status)
         return self.stack.stack_status
 
     def _assign_outputs(self):

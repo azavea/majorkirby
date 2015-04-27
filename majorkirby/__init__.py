@@ -1,4 +1,4 @@
-from .majorkirby import (
+from .majorkirby import (  # NOQA
     MKInputError,
     MKUnresolvableInputError,
     MKNoSuchOutputError,
