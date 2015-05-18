@@ -15,7 +15,7 @@ deploy:
   provider: pypi
   user: azavea
   password:
-    secure: S4FQSkKrvNl+D+w/2hMBKf2DWmk0naC44/YMmDODsmJ0Te9iP7zs2pS9RQ9rWA9mcRMSEK3yTLcPvRTA0MBYIKcDmhCjKRNMSy/vEVtbP6+/WH+gFZvO/yq1wz/illmY6PQeN90enPOiJFff2Q5BDRRNk9zZ5yfML8bLvkJZn6A=
+    secure: hY5D8BDgtPYPTrodOxyGirEK+qui+RFTYl6nJ4jyVjsR2WY45VLkYnetphFkIlQv3qNAuyEwuIQ/9eHsFOV6Sprc5Rlp4GdqdXn7rxkvvQebk+gjdcqvcZUPElux3OD77uuCQn+tvhlo9sueAOb+G4Ir6P9P+81JU2FHG79Bpoc=
   distributions: "sdist bdist_wheel"
   skip_cleanup: true
   on:
