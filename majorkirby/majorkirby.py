@@ -128,7 +128,7 @@ class StackNode(Template):
         self.extra_outputs = {}
         self.stack_name = self.get_stack_name()
         self.aws_region = kwargs.get('aws_region', 'us-east-1')
-        self.aws_profile = kwargs.get('aws_profile', 'default')
+        self.aws_profile = kwargs.get('aws_profile', None)
 
     def connect_from(self, stack, name=None):
         """
