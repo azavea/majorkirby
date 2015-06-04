@@ -127,6 +127,8 @@ class StackNode(Template):
         self.stack_outputs = {}
         self.extra_outputs = {}
         self.stack_name = self.get_stack_name()
+        self.aws_region = kwargs.get('aws_region', 'us-east-1')
+        self.aws_profile = kwargs.get('aws_profile', None)
 
     def connect_from(self, stack, name=None):
         """
@@ -324,7 +326,8 @@ class StackNode(Template):
         Sets up stack and launches it.
         """
         self.set_up_stack()
-        self.boto_conn = cloudformation.CloudFormationConnection()
+        self.boto_conn = cloudformation.connect_to_region(region_name=self.aws_region,
+                                                          profile_name=self.aws_profile)
         parameters = []
         for param, input_name in self.input_wiring.iteritems():
             try:
