@@ -13,7 +13,7 @@ tests_require = ['moto >=0.4.1']
 
 setup(
     name='majorkirby',
-    version='0.1.1',
+    version='0.2.1',
     description='Puts CloudFormation stacks into motion.',
     author='Sharp Hall',
     author_email='shall@azavea.com',
