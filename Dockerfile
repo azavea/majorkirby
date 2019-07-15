@@ -1,7 +1,8 @@
-FROM python:2.7.9
+FROM python:3-slim
 
-ADD . /app
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
 
-WORKDIR /app
+COPY . /usr/src/app
 
-RUN python2 setup.py develop
+RUN python setup.py develop

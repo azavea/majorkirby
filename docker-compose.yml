@@ -1,2 +1,9 @@
-majorkirby:
-  build: .
+version: '3'
+services:
+  majorkirby:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes: 
+      - .:/usr/src/app
+    command: bash
