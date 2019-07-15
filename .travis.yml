@@ -3,6 +3,8 @@ language: python
 python:
   - "3.7"
 
+before_install: sudo rm /etc/boto.cfg
+
 install: pip install flake8 black
 
 before_script:
