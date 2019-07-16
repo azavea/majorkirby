@@ -1,3 +1,4 @@
+from builtins import object
 import sys
 
 from time import sleep
@@ -11,15 +12,10 @@ import logging
 from boto import cloudformation
 from boto.exception import BotoServerError
 
-from troposphere import (
-    Template,
-    Ref,
-    Output,
-    Tags
-)
+from troposphere import Template, Ref, Output, Tags
 
-default_logger = logging.getLogger('cfntool')
-formatter = logging.Formatter('[%(levelname)s] %(message)s')
+default_logger = logging.getLogger("cfntool")
+formatter = logging.Formatter("[%(levelname)s] %(message)s")
 stdout_handler = logging.StreamHandler(sys.stdout)
 stdout_handler.setFormatter(formatter)
 stdout_handler.setLevel(logging.DEBUG)
@@ -31,14 +27,12 @@ class MKInputError(Exception):
     """
     An error related to resolving an input.
     """
-    pass
 
 
 class MKUnresolvableInputError(MKInputError):
     """
     An error indicating the specified input is unresolvable.
     """
-    pass
 
 
 class MKNoSuchOutputError(MKUnresolvableInputError):
@@ -46,21 +40,18 @@ class MKNoSuchOutputError(MKUnresolvableInputError):
     An error indicating the input connection was found but the output
     did not exist.
     """
-    pass
 
 
 class MKNoSuchStackError(MKUnresolvableInputError):
     """
     An error indicating the input connection was not found.
     """
-    pass
 
 
 class MKNoSuchInputError(MKInputError):
     """
     An error indicating the requested input is not defined.
     """
-    pass
 
 
 class StackNode(Template):
@@ -91,9 +82,9 @@ class StackNode(Template):
     DEFAULTS = {}
     ATTRIBUTES = {}
 
-    NAME = ''
+    NAME = ""
 
-    class states:
+    class States(object):
         IDLE = 0
         WAITING = 1
         RUNNING = 2
@@ -114,12 +105,12 @@ class StackNode(Template):
         self.inputs = self.INPUTS.copy()
         self.input_connections = {}
         self.input_connections.update(kwargs)
-        if 'globalconfig' in self.input_connections:
+        if "globalconfig" in self.input_connections:
             # global is a reserved word, so we allow using globalconfig instead
-            self.input_connections['global'] = self.input_connections['globalconfig']
+            self.input_connections["global"] = self.input_connections["globalconfig"]
         self.requires = []
         self.waiting_on = []
-        self.state = self.states.IDLE
+        self.state = self.States.IDLE
         self.should_run = False
         self.input_wiring = {}
         self.last_heartbeat_id = None
@@ -127,8 +118,9 @@ class StackNode(Template):
         self.stack_outputs = {}
         self.extra_outputs = {}
         self.stack_name = self.get_stack_name()
-        self.aws_region = kwargs.get('aws_region', 'us-east-1')
-        self.aws_profile = kwargs.get('aws_profile', None)
+        self.aws_region = kwargs.get("aws_region", "us-east-1")
+        self.aws_profile = kwargs.get("aws_profile", None)
+        self.stack = None
 
     def connect_from(self, stack, name=None):
         """
@@ -166,7 +158,7 @@ class StackNode(Template):
         Returns:
           object: The resolved input
         """
-        (input_connection, varname) = input_address.split(':', 1)
+        (input_connection, varname) = input_address.split(":", 1)
         if input_connection not in self.input_connections:
             raise MKNoSuchInputError
         if varname not in self.input_connections[input_connection].stack_outputs:
@@ -206,7 +198,7 @@ class StackNode(Template):
             default logger
         """
         try:
-            return self.get_input('logger')
+            return self.get_input("logger")
         except MKInputError:
             return default_logger
 
@@ -215,15 +207,17 @@ class StackNode(Template):
         Cycle through all the inputs to find which connected nodes need to
         be run
         """
-        for input_name, input_addresses in self.INPUTS.iteritems():
+        for input_name, input_addresses in list(self.INPUTS.items()):
             try:
                 self.get_input(input_name)
             except MKInputError:
                 for input_address in input_addresses:
-                    dependency = input_address.split(':', 1)[0]
+                    dependency = input_address.split(":", 1)[0]
                     if dependency in self.input_connections:
-                        if (self.input_connections[dependency].state >=
-                                self.states.FINISHED):
+                        if (
+                            self.input_connections[dependency].state
+                            >= self.States.FINISHED
+                        ):
                             continue
                         if dependency not in self.requires:
                             self.requires.append(dependency)
@@ -233,7 +227,7 @@ class StackNode(Template):
         """
         This method should be overridden to set up the stack.
         """
-        self.add_version('2010-09-09')
+        self.add_version("2010-09-09")
 
     def add_parameter(self, parameter, source=None):
         """
@@ -267,10 +261,7 @@ class StackNode(Template):
         resource = self.add_resource(resource)
 
         if output:
-            cloudformation_output = Output(
-                output,
-                Value=Ref(resource)
-            )
+            cloudformation_output = Output(output, Value=Ref(resource))
 
             self.add_output(cloudformation_output)
 
@@ -284,7 +275,7 @@ class StackNode(Template):
         """
         n = 1
         self.heartbeat(0)
-        while self.state < self.states.FINISHED:
+        while self.state < self.States.FINISHED:
             sleep(10)
             self.heartbeat(n)
             n += 1
@@ -298,7 +289,7 @@ class StackNode(Template):
         Returns:
           str: Suffix for stack name
         """
-        h = hashlib.sha256(json.dumps(self.get_raw_tags()))
+        h = hashlib.sha256(json.dumps(self.get_raw_tags()).encode("utf-8"))
         return h.hexdigest()
 
     def get_stack_name(self, with_suffix=True):
@@ -312,24 +303,24 @@ class StackNode(Template):
         Returns:
           str: Name of the stack
         """
-        if self.NAME != '':
+        if self.NAME != "":
             name = self.NAME
         else:
             name = self.__class__.__name__
         if with_suffix:
-            return ('{}-{}'.format(name, self.suffix))[:32]
-        else:
-            return name
+            return ("{}-{}".format(name, self.suffix))[:32]
+        return name
 
     def _launch_cfn(self):
         """
         Sets up stack and launches it.
         """
         self.set_up_stack()
-        self.boto_conn = cloudformation.connect_to_region(region_name=self.aws_region,
-                                                          profile_name=self.aws_profile)
+        self.boto_conn = cloudformation.connect_to_region(
+            region_name=self.aws_region, profile_name=self.aws_profile
+        )
         parameters = []
-        for param, input_name in self.input_wiring.iteritems():
+        for param, input_name in list(self.input_wiring.items()):
             try:
                 parameters.append((param, self.get_input(input_name)))
             except MKInputError:
@@ -339,11 +330,13 @@ class StackNode(Template):
             self.stack = self.boto_conn.describe_stacks(self.stack_name)[0]
         except BotoServerError:
             # it would be great if we could more granularly check the error
-            self.boto_conn.create_stack(self.stack_name,
-                                        tags=self.get_raw_tags(),
-                                        template_body=self.to_json(),
-                                        parameters=parameters)
-            self.logger.info('Stack %s created', self.stack_name)
+            self.boto_conn.create_stack(
+                self.stack_name,
+                tags=self.get_raw_tags(),
+                template_body=self.to_json(),
+                parameters=parameters,
+            )
+            self.logger.info("Stack %s created", self.stack_name)
 
     def _check_cfn(self):
         """
@@ -351,7 +344,7 @@ class StackNode(Template):
         """
 
         self.stack = self.boto_conn.describe_stacks(self.stack_name)[0]
-        self.logger.debug('%s %s', self.stack_name, self.stack.stack_status)
+        self.logger.debug("%s %s", self.stack_name, self.stack.stack_status)
         return self.stack.stack_status
 
     def _assign_outputs(self):
@@ -368,7 +361,6 @@ class StackNode(Template):
         A method which is run after the stack completes which can be
         overridden and used to push additional data into the output.
         """
-        pass
 
     def heartbeat(self, heartbeat_id):
         """
@@ -384,40 +376,45 @@ class StackNode(Template):
         if heartbeat_id == self.last_heartbeat_id:  # prevent multiple checks
             return self.state
         self.last_heartbeat_id = heartbeat_id
-        if self.state == self.states.IDLE:
+        if self.state == self.States.IDLE:
             self._calc_dependencies()
-            self.state = self.states.WAITING
-        if self.state == self.states.WAITING:  # wait on inputs
+            self.state = self.States.WAITING
+        if self.state == self.States.WAITING:  # wait on inputs
             to_remove = []
             for required in self.requires:
-                if (self.input_connections[required].heartbeat(heartbeat_id) ==
-                        self.states.FINISHED):
+                if (
+                    self.input_connections[required].heartbeat(heartbeat_id)
+                    == self.States.FINISHED
+                ):
                     to_remove.append(required)
-                if (self.input_connections[required].heartbeat(heartbeat_id) ==
-                        self.states.FAILED):
-                    self.state = self.states.FAILED
-            self.requires = [required for required in self.requires if
-                             required not in to_remove]
+                if (
+                    self.input_connections[required].heartbeat(heartbeat_id)
+                    == self.States.FAILED
+                ):
+                    self.state = self.States.FAILED
+            self.requires = [
+                required for required in self.requires if required not in to_remove
+            ]
             if len(self.requires) == 0:
                 self._launch_cfn()
-                self.state = self.states.RUNNING
-        if self.state == self.states.RUNNING:
+                self.state = self.States.RUNNING
+        if self.state == self.States.RUNNING:
             status = self._check_cfn()
-            if status == 'ROLLBACK_COMPLETE':
-                self.logger.error('%s failed', self.stack_name)
-                self.state = self.states.FAILED
-            elif status == 'CREATE_COMPLETE' or status == 'UPDATE_COMPLETE':
+            if status == "ROLLBACK_COMPLETE":
+                self.logger.error("%s failed", self.stack_name)
+                self.state = self.States.FAILED
+            elif status in ("CREATE_COMPLETE", "UPDATE_COMPLETE"):
                 self._assign_outputs()
-                self.logger.info('%s finished', self.stack_name)
-                self.state = self.states.FINISHED
+                self.logger.info("%s finished", self.stack_name)
+                self.state = self.States.FINISHED
         return self.state
 
     def get_raw_tags(self, **kwargs):
-        tags = {'StackName': self.get_stack_name(False)}
+        tags = {"StackName": self.get_stack_name(False)}
         tags.update(kwargs)
-        for k, v in self.ATTRIBUTES.iteritems():
+        for k, v in list(self.ATTRIBUTES.items()):
             tags[k] = self.get_input(v)
-        tags = OrderedDict(sorted(tags.iteritems(), key=lambda x: x[0]))
+        tags = OrderedDict(sorted(iter(list(tags.items())), key=lambda x: x[0]))
         # the above line protects us in case python ever changes its
         # hashing algorithm
         return tags
@@ -441,7 +438,7 @@ class GlobalConfigNode(StackNode):
         """
         super(GlobalConfigNode, self).__init__()
         self.stack_outputs = kwargs
-        self.state = self.states.FINISHED  # don't do anything, just feed outputs
+        self.state = self.States.FINISHED  # don't do anything, just feed outputs
 
 
 class NullNode(StackNode):
@@ -458,11 +455,13 @@ class NullNode(StackNode):
         return "CREATE_COMPLETE"
 
     def _calc_dependencies(self):
-        self.requires = self.input_connections.keys()
+        self.requires = list(self.input_connections.keys())
 
     def _custom_output_transform(self):
         self.stack_outputs = {}
-        for input_connection_name, input_connection in self.input_connections.iteritems():
+        for input_connection_name, input_connection in list(
+            self.input_connections.items()
+        ):
             self.stack_outputs[input_connection_name] = input_connection.stack_outputs
 
 
@@ -478,7 +477,6 @@ class CustomActionNode(StackNode):
 
         Outputs should be defined as a dict in self.stack_outputs
         """
-        pass
 
     def _check_cfn(self):
         """
@@ -493,4 +491,3 @@ class CustomActionNode(StackNode):
         """
         Do nothing so that the action method can set the outputs.
         """
-        pass
