@@ -1,13 +1,15 @@
+dist: xenial
 language: python
-
-sudo: false
-
 python:
-  - "2.7"
+  - "3.7"
 
-install: pip install --use-mirrors flake8
+before_install: sudo rm /etc/boto.cfg
 
-before_script: flake8 .
+install: pip install flake8 black
+
+before_script:
+  - flake8 .
+  - black --check .
 
 script: python setup.py test
 

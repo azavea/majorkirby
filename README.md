@@ -8,15 +8,15 @@ There are two ways to run the built-in test suite. One is intended to be run loc
 
 ### Local
 
-The local tests require a working installation of Python 2.7:
+The local tests require a working installation of Python 3:
 
 ```bash
-$ python setup.py test
+$ python3 setup.py test
 ```
 
 ### Docker
 
-The Docker setup builds an image with Python 2.7 installed, along with all of this project's dependencies. Build the image and launch the container with [`docker-compose`](https://docs.docker.com/compose/):
+The Docker setup builds an image with Python 3 installed, along with all of this project's dependencies. Build the image and launch the container with Docker Compose:
 
 ```bash
 $ docker-compose build majorkirby

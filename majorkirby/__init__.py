@@ -6,5 +6,5 @@ from .majorkirby import (  # NOQA
     MKNoSuchInputError,
     StackNode,
     GlobalConfigNode,
-    CustomActionNode
+    CustomActionNode,
 )
