@@ -1,3 +1,8 @@
+## 1.0.0
+
+- Added Python 3 support (only Python 3.7 tested).
+- Removed Python 2 support.
+
 ## 0.2.1
 
 - Forgot to bump version in `setup.py`.
