@@ -9,8 +9,8 @@ import hashlib
 import json
 import logging
 
-from boto import cloudformation
-from boto.exception import BotoServerError
+import boto3
+from botocore.exceptions import ClientError
 
 from troposphere import Template, Ref, Output, Tags
 
@@ -114,13 +114,48 @@ class StackNode(Template):
         self.should_run = False
         self.input_wiring = {}
         self.last_heartbeat_id = None
-        self.boto_conn = None
+        self._cfn_client = None
         self.stack_outputs = {}
         self.extra_outputs = {}
         self.stack_name = self.get_stack_name()
         self.aws_region = kwargs.get("aws_region", "us-east-1")
         self.aws_profile = kwargs.get("aws_profile", None)
         self.stack = None
+
+    def _get_cfn_client(self):
+        if self._cfn_client is not None:
+            return self._cfn_client
+
+        session = boto3.session.Session(
+            profile_name=self.aws_profile, region_name=self.aws_region
+        )
+        self._cfn_client = session.client("cloudformation")
+        return self._cfn_client
+
+    @staticmethod
+    def _to_cfn_parameters(parameters):
+        return [
+            {"ParameterKey": key, "ParameterValue": str(value)}
+            for key, value in parameters
+        ]
+
+    @staticmethod
+    def _to_cfn_tags(tags):
+        return [{"Key": key, "Value": str(value)} for key, value in tags.items()]
+
+    def _describe_stack(self):
+        cfn = self._get_cfn_client()
+        try:
+            response = cfn.describe_stacks(StackName=self.stack_name)
+            return response["Stacks"][0]
+        except ClientError as e:
+            error = e.response.get("Error", {})
+            if error.get("Code") != "ValidationError":
+                raise
+            message = (error.get("Message") or "").lower()
+            if "does not exist" not in message:
+                raise
+            return None
 
     def connect_from(self, stack, name=None):
         """
@@ -227,7 +262,10 @@ class StackNode(Template):
         """
         This method should be overridden to set up the stack.
         """
-        self.add_version("2010-09-09")
+        if hasattr(self, "set_version"):
+            self.set_version("2010-09-09")
+        else:
+            self.add_version("2010-09-09")
 
     def add_parameter(self, parameter, source=None):
         """
@@ -316,25 +354,25 @@ class StackNode(Template):
         Sets up stack and launches it.
         """
         self.set_up_stack()
-        self.boto_conn = cloudformation.connect_to_region(
-            region_name=self.aws_region, profile_name=self.aws_profile
-        )
+        cfn = self._get_cfn_client()
         parameters = []
         for param, input_name in list(self.input_wiring.items()):
             try:
                 parameters.append((param, self.get_input(input_name)))
             except MKInputError:
                 pass
-        # check to see if stack exists
-        try:
-            self.stack = self.boto_conn.describe_stacks(self.stack_name)[0]
-        except BotoServerError:
-            # it would be great if we could more granularly check the error
-            self.boto_conn.create_stack(
-                self.stack_name,
-                tags=self.get_raw_tags(),
-                template_body=self.to_json(),
-                parameters=parameters,
+
+        cfn_parameters = self._to_cfn_parameters(parameters)
+        cfn_tags = self._to_cfn_tags(self.get_raw_tags())
+
+        # Check to see if stack exists.
+        self.stack = self._describe_stack()
+        if self.stack is None:
+            cfn.create_stack(
+                StackName=self.stack_name,
+                Tags=cfn_tags,
+                TemplateBody=self.to_json(),
+                Parameters=cfn_parameters,
             )
             self.logger.info("Stack %s created", self.stack_name)
 
@@ -343,17 +381,20 @@ class StackNode(Template):
         Checks the status of the stack
         """
 
-        self.stack = self.boto_conn.describe_stacks(self.stack_name)[0]
-        self.logger.debug("%s %s", self.stack_name, self.stack.stack_status)
-        return self.stack.stack_status
+        self.stack = self._describe_stack()
+        if self.stack is None:
+            raise MKNoSuchStackError
+        status = self.stack.get("StackStatus")
+        self.logger.debug("%s %s", self.stack_name, status)
+        return status
 
     def _assign_outputs(self):
         """
-        Moves keys and values from boto output objects into dict.
+        Moves keys and values from CloudFormation outputs into a dict.
         """
         self.stack_outputs = {}
-        for output in self.stack.outputs:
-            self.stack_outputs[output.key] = output.value
+        for output in self.stack.get("Outputs", []) or []:
+            self.stack_outputs[output["OutputKey"]] = output["OutputValue"]
         self._custom_output_transform()
 
     def _custom_output_transform(self):

@@ -2,6 +2,8 @@
 
 Puts CloudFormation stacks into motion.
 
+This project uses `boto3` for AWS CloudFormation.
+
 ## Testing
 
 There are two ways to run the built-in test suite. One is intended to be run locally, while the other is setup to run within a Docker container.
