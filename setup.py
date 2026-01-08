@@ -10,7 +10,7 @@ with open(
 ) as f:
     long_description = f.read()
 
-tests_require = ["moto >=0.4.1"]
+tests_require = ["moto[cloudformation] >=4.0.0"]
 
 setup(
     name="majorkirby",
