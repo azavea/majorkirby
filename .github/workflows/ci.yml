@@ -24,9 +24,6 @@ jobs:
             setup.py
             setup.cfg
 
-      - name: Remove legacy boto config (Travis parity)
-        run: sudo rm -f /etc/boto.cfg
-
       - name: Install linters
         run: |
           python -m pip install --upgrade pip
@@ -62,9 +59,6 @@ jobs:
           cache-dependency-path: |
             setup.py
             setup.cfg
-
-      - name: Remove legacy boto config (Travis parity)
-        run: sudo rm -f /etc/boto.cfg
 
       - name: Install dependencies
         run: |
