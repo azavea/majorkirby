@@ -2,7 +2,7 @@ import unittest
 
 from majorkirby import GlobalConfigNode, StackNode
 from troposphere import Output
-from moto import mock_cloudformation_deprecated
+from moto import mock_aws
 
 
 class FirstStackNode(StackNode):
@@ -22,7 +22,7 @@ class SecondStackNode(StackNode):
 
 
 class TestStackNode(unittest.TestCase):
-    @mock_cloudformation_deprecated
+    @mock_aws
     def test_stack_threading(self):
         global_config = GlobalConfigNode(**{"test": "joker"})
 

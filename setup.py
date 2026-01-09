@@ -10,7 +10,7 @@ with open(
 ) as f:
     long_description = f.read()
 
-tests_require = ["moto >=0.4.1"]
+tests_require = ["moto[cloudformation] >=4.0.0"]
 
 setup(
     name="majorkirby",
@@ -20,7 +20,7 @@ setup(
     author_email="shall@azavea.com",
     keywords="aws cloudformation",
     packages=find_packages(exclude=["tests"]),
-    install_requires=["troposphere>=0.7.2", "boto>=2.38.0"],
+    install_requires=["troposphere>=0.7.2", "boto3>=1.9.0"],
     extras_require={"dev": [], "test": tests_require},
     test_suite="tests",
     tests_require=tests_require,
