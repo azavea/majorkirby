@@ -1,4 +1,4 @@
-# majorkirby [![Build Status](https://travis-ci.org/azavea/majorkirby.svg)](https://travis-ci.org/azavea/majorkirby)
+# majorkirby [![CI](https://github.com/azavea/majorkirby/actions/workflows/ci.yml/badge.svg)](https://github.com/azavea/majorkirby/actions/workflows/ci.yml)
 
 Puts CloudFormation stacks into motion.
 
