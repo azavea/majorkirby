@@ -1,3 +1,10 @@
+## 2.0.0
+
+- Upgrade to boto3
+- Switch to GitHub Actions
+- Remove TravisCI
+- Test upto Python 3.12
+
 ## 1.0.0
 
 - Added Python 3 support (only Python 3.7 tested).

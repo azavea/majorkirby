@@ -14,7 +14,7 @@ tests_require = ["moto[cloudformation] >=4.0.0"]
 
 setup(
     name="majorkirby",
-    version="1.0.0",
+    version="2.0.0",
     description="Puts CloudFormation stacks into motion.",
     author="Sharp Hall",
     author_email="shall@azavea.com",
